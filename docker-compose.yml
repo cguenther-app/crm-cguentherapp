@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  crm-pocketbase:
+    image: ghcr.io/muchobien/pocketbase:latest
+    container_name: crm-pocketbase
+    restart: unless-stopped
+    volumes:
+      - ./pocketbase/pb_data:/pb/pb_data
+    networks:
+      - crm-internal
+
+  crm-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: crm-frontend
+    restart: unless-stopped
+    environment:
+      - POCKETBASE_URL=http://crm-pocketbase:8090
+      - NEXT_PUBLIC_POCKETBASE_URL=http://crm-pocketbase:8090
+    ports:
+      - "3100:3000"
+    depends_on:
+      - crm-pocketbase
+    networks:
+      - crm-internal
+
+networks:
+  crm-internal:
+    driver: bridge
