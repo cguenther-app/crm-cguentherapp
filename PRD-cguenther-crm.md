@@ -1,8 +1,8 @@
 # PRD – cguenther.app Mini-CRM
-**Version:** 0.1 (MVP)  
-**Stand:** Februar 2026  
-**Autor:** Christian Günther  
-**Status:** Entwurf
+**Version:** 1.1
+**Stand:** Februar 2026
+**Autor:** Christian Günther
+**Status:** MVP abgeschlossen – V2 in Planung
 
 ---
 
@@ -32,228 +32,189 @@ Authentifizierung ist erforderlich – die App ist nicht öffentlich zugänglich
 
 | Bereich | Technologie | Begründung |
 |---------|-------------|------------|
-| Frontend | Next.js 14+ (App Router) | Moderne React-Basis, gute DX, SSR/SSG-Optionen |
+| Framework | Next.js 14+ (App Router) | Moderne React-Basis, gute DX |
+| Sprache | TypeScript 5+ | Typsicherheit |
 | UI-Komponenten | shadcn/ui + Tailwind CSS | Schnell, barrierefrei, einfach anpassbar |
-| Backend / Datenbank | **PocketBase** (Docker, self-hosted) | Single-Binary, integrierte Auth, File Storage, Admin-UI, SQLite |
-| Authentifizierung | PocketBase Auth | E-Mail + Passwort (MVP); OAuth2 (Google, GitHub etc.) nachrüstbar |
-| Hosting | Hetzner VPS (bestehend) via Docker Compose | Volle Datenkontrolle, kein SaaS-Abhängigkeit |
-| Reverse Proxy | NGINX (bestehend) | Nur Next.js-Frontend wird nach außen exposed |
-| Sprache / Locale | Deutsch (DE) | Zielgruppe und Betreiber deutsch |
+| Rich-Text | TipTap 2+ | Leichtgewichtiger Editor |
+| Formulare | React Hook Form + Zod | Validierung, gute DX |
+| Backend / Datenbank | PocketBase (Docker, self-hosted) | Single-Binary, Auth, SQLite |
+| Hosting | Hetzner VPS via Docker Compose | Volle Datenkontrolle |
+| Reverse Proxy | NGINX Proxy Manager | Subdomain + SSL |
 
-### Architektur
-
+### Deployment
 ```
 Hetzner VPS
-├── NGINX (Reverse Proxy, bereits vorhanden)
-│   └── crm.cguenther.app → crm-frontend:3000
-├── cguenther.app Website (bereits vorhanden)
-├── Analytics Tool (bereits vorhanden)
-├── crm-frontend (Next.js Container, Port 3000 intern)
-└── crm-pocketbase (PocketBase Container, Port 8090 intern)
+├── NGINX Proxy Manager → crm.cguenther.app → crm-frontend:3100
+├── crm-frontend (Next.js, Port 3100 extern / 3000 intern)
+└── crm-pocketbase (PocketBase, Port 8090 nur intern)
 ```
 
-- **PocketBase ist nicht öffentlich erreichbar** – nur im internen Docker-Netzwerk
-- **Next.js** kommuniziert server-seitig mit PocketBase über das interne Netzwerk (`http://crm-pocketbase:8090`)
-- **PocketBase Admin-UI** ist per SSH-Tunnel erreichbar: `ssh -L 8090:crm-pocketbase:8090 user@server` → dann `http://localhost:8090/_/` im Browser öffnen
-- **Dateianhänge** liegen lokal im PocketBase-Datenverzeichnis (per Docker Volume gemountet)
+- PocketBase Admin-UI: SSH-Tunnel `ssh -L 8090:localhost:8090 root@server` → `http://localhost:8090/_/`
+- Lokale Entwicklung: `npm run dev` + SSH-Tunnel für PocketBase
 
 ---
 
-## 4. Features – MVP (V1)
+## 4. Features – MVP V1 ✅ Abgeschlossen
 
-### 4.1 Authentifizierung
+### 4.1 Authentifizierung ✅
 - Login via E-Mail + Passwort
-- Geschützte Routen – kein Zugriff ohne Session
-- Logout-Funktion
-- Kein Self-Registration (manuell angelegt)
+- Geschützte Routen (AuthGuard)
+- Logout
 
-### 4.2 Organisationsverwaltung
-- Liste aller Organisationen (tabellarisch, durchsuchbar, sortierbar)
-- Felder einer Organisation:
-  - Name *(Pflichtfeld)*
-  - Branche / Kategorie (z. B. Maler, Elektriker, Zimmermann)
-  - Adresse (Straße, PLZ, Ort)
-  - Website
-  - Telefon
-  - Status (siehe Lead-Status unten)
-  - Tags (Freitext, kommagetrennt)
-  - Erstellt am / Zuletzt geändert am *(automatisch)*
-- Detailansicht einer Organisation:
-  - Alle Felder
-  - Liste der zugeordneten Kontakte
-  - Notizen-Timeline (chronologisch, neueste oben)
-- Neue Organisation anlegen / bearbeiten / löschen
+### 4.2 Organisationsverwaltung ✅
+- Liste mit Suche (Name, Branche, Ort) und Status-Filter
+- Felder: Name, Branche, Adresse, Website, Telefon, Status, Tags
+- Detailansicht mit Kontakten und Notizen-Timeline
+- Anlegen / Bearbeiten / Löschen (mit Bestätigung)
 
-### 4.3 Lead-Tracking & Pipeline-Übersicht
+### 4.3 Lead-Pipeline ✅
+- Tabellenansicht: Firma, Branche, Status, Letzter Kontakt, Tage seit letztem Kontakt
+- „Tage"-Spalte farblich (grün ≤7d → gelb ≤14d → orange ≤30d → rot >30d)
+- Filter nach Status, Sortierung nach Tagen / Name / Status
+- Letzter Kontakt = neueste Notiz der Organisation
 
-**Lead-Status (Enum):**
+**Lead-Status:**
 
 | Status | Bedeutung |
 |--------|-----------|
 | `lead` | Identifiziert, noch nicht kontaktiert |
-| `contacted` | Erste Mail/Anruf raus, keine Reaktion |
-| `responded` | Hat geantwortet (positiv oder neutral) |
-| `interested` | Möchte mehr wissen / Termin vereinbart |
+| `contacted` | Erste Mail/Anruf raus |
+| `responded` | Hat geantwortet |
+| `interested` | Möchte mehr wissen / Termin |
 | `offer_sent` | Konkretes Angebot läuft |
 | `customer` | Aktiver Kunde |
-| `no_interest` | Abgesagt oder nach Follow-up keine Reaktion |
+| `no_interest` | Kein Interesse |
 | `paused` | Auf Eis gelegt |
 
-**Lead-Übersichtsseite (`/leads`):**
-- Tabellenansicht mit Spalten: Firma, Branche, Status, Letzter Kontakt (Datum der letzten Notiz), Tage seit letztem Kontakt, Nächste Aktion
-- Spalte "Tage seit letztem Kontakt" farblich hinterlegt (grün → gelb → rot) – sofort sichtbar wer überfällig ist
-- Filterbar nach Status
-- Sortierbar nach Datum / Status
-- Optional als Toggle: Kanban-View (Spalten = Status, Karten = Organisationen)
+### 4.4 Kontaktverwaltung ✅
+- Kontakte immer einer Organisation zugeordnet
+- Felder: Vorname, Nachname, Rolle, E-Mail, Telefon, Mobil, Hauptkontakt
+- Anlegen per Dialog direkt in der Org-Detailansicht
+- Globale Kontaktliste (`/kontakte`) mit Suche
+- Eigene Detailansicht, Bearbeiten / Löschen
 
-### 4.4 Kontaktverwaltung
-- Kontakte sind immer einer Organisation zugeordnet (n Kontakte pro Organisation)
-- Felder eines Kontakts:
-  - Vorname, Nachname *(Pflichtfeld)*
-  - Position / Rolle
-  - E-Mail
-  - Telefon / Mobil
-  - Ist Hauptkontakt (Boolean)
-  - Notizen-Timeline (chronologisch, neueste oben)
-- Kontakt kann direkt aus der Organisationsansicht angelegt werden
-- Eigene Detailansicht für Kontakte
-- Bearbeiten / Löschen
-
-### 4.5 Notizen mit Zeitstempel
-- Notizen können an **Organisationen** und an **Kontakte** geheftet werden
-- Felder:
-  - Inhalt (Rich-Text via **TipTap** – fett, kursiv, Listen, Links)
-  - Typ (intern, Telefonnotiz, Besuch, E-Mail-Eingang, E-Mail-Ausgang, Sonstige)
-  - Zeitstempel *(automatisch gesetzt, manuell editierbar)*
-  - Erstellt von (in MVP immer Christian, für spätere Mehrnutzer vorbereitet)
-- Timeline-Ansicht auf Organisations- und Kontakt-Detailseite
-- Notiz anlegen, bearbeiten, löschen
-- Suche/Filter in der Timeline nach Typ
+### 4.5 Notizen ✅
+- Heftbar an Organisationen und Kontakte
+- Rich-Text via TipTap (fett, kursiv, Listen)
+- Typen: Intern, Telefonnotiz, Besuch, E-Mail-Ein/-Ausgang, Sonstige
+- Datum manuell anpassbar
+- Timeline (neueste oben), Bearbeiten / Löschen (mit Bestätigung)
 
 ---
 
-## 5. Features – Roadmap (V2+)
+## 5. Abnahmekriterien MVP
 
-Diese Features werden im PRD skizziert, aber nicht im MVP implementiert. Das Datenbankschema soll sie jedoch **nicht ausschließen**.
-
-| Feature | Beschreibung |
-|---------|-------------|
-| Angebote erstellen | PDF-Angebot auf Basis der cguenther.app-Vorlage direkt im System generieren |
-| Rechnungen erstellen | Analog zu Angeboten, mit §19 UStG-Konformität |
-| E-Mails aus dem System | SMTP-Integration; E-Mail wird als Aktivität in der Timeline gespeichert |
-| Aktivitäten-Log | Automatisch protokollierte Statusänderungen, nicht nur manuelle Notizen |
-| Mehrnutzer | Zweiter Admin oder eingeschränkte Rolle (Lesezugriff) |
-| Dashboard | Übersicht: Anzahl Leads, offene Angebote, letzte Aktivitäten |
-| Dateianhänge | Dokumente/Bilder an Organisationen oder Kontakte anhängen |
-| Erinnerungen / Follow-ups | Datum-basierte Wiedervorlagen pro Kontakt/Organisation |
+- [x] Login funktioniert, unauthentifizierte Zugriffe → `/login`
+- [x] Organisationen anlegen, bearbeiten, suchen, löschen
+- [x] Lead-Status pro Organisation setzbar
+- [x] Lead-Übersicht mit Tage-Indikator und Farbkodierung
+- [x] Lead-Übersicht nach Status filterbar
+- [x] Kontakte pro Organisation verwalten
+- [x] Notizen an Organisationen und Kontakte hängen
+- [x] Rich-Text-Editor (TipTap)
+- [x] Deployment auf Hetzner via Docker Compose
 
 ---
 
-## 6. Datenmodell (vereinfacht)
+## 6. Roadmap V2
 
+### Priorisierung
+
+| Priorität | Feature | Aufwand | Beschreibung |
+|-----------|---------|---------|--------------|
+| 🔴 Hoch | **Angebote** | Groß | Angebote erstellen, versenden, Status tracken |
+| 🔴 Hoch | **Erinnerungen / Follow-ups** | Mittel | Wiedervorlage-Datum pro Org/Kontakt, Hinweis in Lead-Pipeline |
+| 🟡 Mittel | **Dashboard** | Mittel | KPIs: offene Leads, Angebote, letzte Aktivitäten |
+| 🟡 Mittel | **Aktivitäten-Log** | Mittel | Automatisch protokollierte Statusänderungen |
+| 🟡 Mittel | **Dateianhänge** | Mittel | Dokumente/Bilder an Org/Kontakt anhängen (PocketBase File Storage) |
+| 🟢 Niedrig | **Kanban-View Leads** | Klein | Pipeline als Kanban-Board (Toggle zur Tabellenansicht) |
+| 🟢 Niedrig | **Rechnungen** | Groß | Nach Angeboten, §19 UStG-Konformität |
+| 🟢 Niedrig | **E-Mail-Integration** | Groß | SMTP-Versand, E-Mail als Timeline-Aktivität |
+| 🟢 Niedrig | **Mehrnutzer** | Mittel | Zweiter Admin oder Lesezugriff |
+
+---
+
+## 7. Feature-Spezifikation: Angebote (V2, Prio 🔴)
+
+### Konzept
+Angebote werden direkt im CRM erstellt, an eine Organisation (und optional einen Kontakt) geheftet und als PDF exportiert. Der Status eines Angebots beeinflusst den Lead-Status der Organisation.
+
+### Datenmodell
 ```
-organizations
-  id (uuid, PK)
-  name (text, not null)
-  industry (text)
-  address_street (text)
-  address_zip (text)
-  address_city (text)
-  website (text)
-  phone (text)
-  status (enum: lead | contacted | responded | interested | offer_sent | customer | no_interest | paused)
-  tags (text[])
-  created_at (timestamptz)
-  updated_at (timestamptz)
-
-contacts
-  id (uuid, PK)
-  organization_id (uuid, FK → organizations)
-  first_name (text, not null)
-  last_name (text, not null)
-  role (text)
-  email (text)
-  phone (text)
-  mobile (text)
-  is_primary (boolean, default false)
-  created_at (timestamptz)
-  updated_at (timestamptz)
-
-notes
-  id (uuid, PK)
-  organization_id (uuid, FK → organizations, nullable)
-  contact_id (uuid, FK → contacts, nullable)
-  -- constraint: mindestens eines der beiden muss gesetzt sein
-  type (enum: internal | call | visit | email_in | email_out | other)
-  content (text, not null)
-  noted_at (timestamptz, default now())
-  created_at (timestamptz)
-  updated_at (timestamptz)
-  created_by (uuid, FK → users)
+offers
+  id            (uuid, PK)
+  organization  (FK → organizations, required)
+  contact       (FK → contacts, nullable)
+  title         (text) – z.B. "Website-Relaunch Mai 2026"
+  number        (text) – Angebotsnummer, z.B. "A-2026-001"
+  status        (enum: draft | sent | accepted | rejected | expired)
+  date          (date) – Angebotsdatum
+  valid_until   (date) – Gültig bis
+  positions     (json) – Array: [{title, qty, unit, price}]
+  total         (number) – Gesamtbetrag (berechnet)
+  notes         (text) – Interne Notiz zum Angebot
+  created       (auto)
+  updated       (auto)
 ```
 
----
+### Status-Verknüpfung
+Wenn ein Angebot angelegt wird → Org-Status automatisch auf `offer_sent` setzen (optional, mit Bestätigung).
 
-## 7. UX & Design
+### PDF-Export
+- Client-seitig via `jsPDF` oder `@react-pdf/renderer`
+- Vorlage basiert auf cguenther.app Corporate Design
+- Pflichtangaben: §19 UStG-Hinweis (Kleinunternehmerregelung)
 
-- **Responsive:** Mobile-first, funktioniert auf Smartphone, Tablet und Desktop
-- **Farbschema:** Aus dem cguenther.app Logo extrahiert:
-  - Primary Blue: `#3D5A80` (Schrift, Navigation)
-  - Accent Orange: `#F58220` (CTAs, Highlights, Badges)
-  - Cyan: `#29B8D4` (Icons, aktive Zustände)
-  - Navy: `#2B4A7A` (Sidebar-Hintergrund Dark)
-  - Terracotta: `#C0532A` (Warnungen, sekundäre Akzente)
-- **Dark/Light-Mode:** Umschalter in der Sidebar, Präferenz wird im Browser gespeichert
-- **Navigation:** Sidebar links (Desktop) / Bottom-Nav (Mobil, ≤ 768px)
-- **Logo:** cguenther.app Logo in der Sidebar oben; Favicon (rechteckige Variante) als Browser-Icon
-- **Hauptbereiche:**
-  - `/` → Redirect zu `/leads`
-  - `/leads` → Pipeline-Übersicht (Tabelle + optionaler Kanban-Toggle)
-  - `/organisationen` → Listenansicht aller Organisationen
-  - `/organisationen/[id]` → Detailansicht mit Kontakten & Timeline
-  - `/kontakte/[id]` → Kontakt-Detailansicht mit Timeline
-  - `/login` → Login-Seite (ohne Sidebar)
+### UI
+- `/angebote` – Liste aller Angebote mit Status und Betrag
+- Angebot anlegen direkt aus Org-Detailansicht
+- `/angebote/[id]` – Detailansicht mit Positionen und PDF-Export-Button
+- Angebote erscheinen auch in der Org-Timeline
 
 ---
 
-## 8. Nicht-funktionale Anforderungen
+## 8. Vorgehen für neue Features
 
-| Anforderung | Ziel |
-|-------------|------|
-| Performance | Seitenload < 2 Sekunden auf normaler DSL-Verbindung |
-| Datenschutz | Kundendaten verbleiben auf eigenem Server (bei PocketBase-Option) |
-| Sicherheit | Alle Routen hinter Auth; HTTPS zwingend |
-| Wartbarkeit | Saubere Komponentenstruktur; einfach erweiterbar für V2-Features |
-| Demotauglichkeit | Sauber genug, um Kunden als Referenz-Implementierung gezeigt zu werden |
+### Prozess
+1. **Idee im PRD ergänzen** – grob beschreiben was es können soll
+2. **Datenmodell klären** – welche neue PocketBase Collection? Welche Felder?
+3. **Collection per Script anlegen** – `scripts/pb-setup.mjs` erweitern oder separates Script
+4. **UI bauen** – Hook → Komponenten → Seiten
+5. **Lokal testen** – SSH-Tunnel + `npm run dev`
+6. **Deployen** – `git push` → `git pull` + `docker compose up -d --build crm-frontend`
 
----
-
-## 9. Offene Punkte / Entscheidungen
-
-| # | Thema | Optionen | Entscheidung |
-|---|-------|----------|--------------|
-| 1 | Backend-Wahl | Supabase vs. PocketBase | ✅ **PocketBase (Docker, Hetzner)** |
-| 2 | Hosting-Infrastruktur | Vercel + Cloud vs. eigener VPS | ✅ **Hetzner VPS, Docker Compose, NGINX** |
-| 3 | Editor für Notizen | Textarea vs. Rich-Text (TipTap) | ✅ **TipTap (leichter Rich-Text-Editor)** |
-| 4 | Suche | Client-seitig vs. Server-seitig | V1: client-seitig |
-| 5 | i18n | Nur Deutsch vs. mehrsprachig | V1: nur Deutsch |
+### Faustregel Aufwand
+| Aufwand | Beispiel | Dauer |
+|---------|---------|-------|
+| Klein | Kanban-Toggle, neue Spalte | 1–2h |
+| Mittel | Erinnerungen, Dashboard | halber Tag |
+| Groß | Angebote mit PDF | 1–2 Tage |
 
 ---
 
-## 10. Abnahmekriterien MVP
+## 9. Datenmodell (aktuell implementiert)
 
-- [ ] Login funktioniert, unauthentifizierte Zugriffe werden auf `/login` umgeleitet
-- [ ] Organisationen können angelegt, bearbeitet, gesucht und gelöscht werden
-- [ ] Lead-Status kann pro Organisation gesetzt werden
-- [ ] Lead-Übersicht zeigt Firma, Status, letzten Kontakt und Tage seit letztem Kontakt
-- [ ] Lead-Übersicht ist nach Status filterbar und farblich kodiert
-- [ ] Pro Organisation können beliebig viele Kontakte verwaltet werden
-- [ ] Notizen können an Organisationen und Kontakte geheftet werden, inkl. Typ und Zeitstempel
-- [ ] Notiz-Editor unterstützt Rich-Text (fett, kursiv, Listen, Links) via TipTap
-- [ ] Die Timeline ist chronologisch sortiert und nach Typ filterbar
-- [ ] Die App ist auf Mobilgeräten vollständig bedienbar
-- [ ] Deployment läuft stabil auf Hetzner VPS via Docker Compose
+```
+organizations       → name, industry, address_*, website, phone, status, tags
+contacts            → organization (FK), first_name, last_name, role, email, phone, mobile, is_primary
+notes               → organization (FK, nullable), contact (FK, nullable), type, content, noted_at, created_by
+users               → PocketBase Auth-Collection (E-Mail + Passwort)
+```
 
 ---
 
-*Dieses Dokument ist lebendig – Änderungen und Ergänzungen werden versioniert.*
+## 10. Design-Token
+
+| Token | Hex | Verwendung |
+|-------|-----|-----------|
+| Primary | `#3D5A80` | Navigation, Schrift |
+| Accent | `#F58220` | CTAs, Badges |
+| Cyan | `#29B8D4` | Icons, aktive Zustände |
+| Navy | `#2B4A7A` | Sidebar Dark |
+| Terracotta | `#C0532A` | Warnungen |
+
+Dark Mode via `next-themes`, Tailwind `darkMode: 'class'`.
+
+---
+
+*Dieses Dokument ist lebendig – bei jedem neuen Feature hier zuerst dokumentieren.*
