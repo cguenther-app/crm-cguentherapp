@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { KontaktListe } from '@/components/organisationen/KontaktListe'
 
 export default function OrganisationDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -169,15 +170,13 @@ export default function OrganisationDetailPage({ params }: { params: { id: strin
         </Card>
       </div>
 
-      {/* Kontakte – folgt */}
+      {/* Kontakte */}
       <Card className="mb-4">
         <CardHeader>
           <CardTitle className="text-base">Kontakte</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Kontakte werden im nächsten Schritt implementiert.
-          </p>
+          <KontaktListe organizationId={org.id} />
         </CardContent>
       </Card>
 
