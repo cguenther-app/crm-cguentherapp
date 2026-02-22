@@ -134,7 +134,39 @@ Hetzner VPS
 
 ---
 
-## 7. Feature-Spezifikation: Angebote (V2, Prio 🔴)
+## 7. Feature-Spezifikation: Produkte / Artikelkatalog (V2, Voraussetzung für Angebote)
+
+### Konzept
+Ein interner Artikelkatalog als Grundlage für Angebote. Artikel werden einmal gepflegt und beim Erstellen eines Angebots ausgewählt. Der Preis ist ein Richtwert – im Angebot anpassbar.
+
+### Datenmodell
+```
+products
+  id             (uuid, PK)
+  article_number (text) – z.B. "P2a"
+  name           (text, required) – Bezeichnung
+  description    (text) – Worum geht's?
+  billing_type   (enum: einmalig | nach_aufwand | monatlich)
+  price          (number) – Richtwert, im Angebot anpassbar
+  unit           (text) – z.B. "pauschal", "Stunde", "Monat"
+  category       (text) – z.B. "Online stellen", "Wartung"
+  note           (text) – Interner Hinweis
+  active         (bool, default true) – zum Ausblenden veralteter Artikel
+  created        (auto)
+  updated        (auto)
+```
+
+### UI
+- `/produkte` – Liste aller Artikel, gruppiert nach Kategorie
+- Artikel anlegen / bearbeiten / deaktivieren
+- Beim Angebot: Artikel aus Katalog auswählen → Preis vorausgefüllt, anpassbar
+
+### Status
+⏳ Warten auf finale Artikelliste (Entwurf liegt vor)
+
+---
+
+## 8. Feature-Spezifikation: Angebote (V2, Prio 🔴)
 
 ### Konzept
 Angebote werden direkt im CRM erstellt, an eine Organisation (und optional einen Kontakt) geheftet und als PDF exportiert. Der Status eines Angebots beeinflusst den Lead-Status der Organisation.
