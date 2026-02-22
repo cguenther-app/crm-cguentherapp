@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
+import { NotizenTimeline } from '@/components/notizen/NotizenTimeline'
 
 export default function KontaktDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -135,15 +136,13 @@ export default function KontaktDetailPage({ params }: { params: { id: string } }
         </CardContent>
       </Card>
 
-      {/* Notizen – folgt */}
+      {/* Notizen */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Notizen</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Notizen werden im nächsten Schritt implementiert.
-          </p>
+          <NotizenTimeline contactId={kontakt.id} />
         </CardContent>
       </Card>
 

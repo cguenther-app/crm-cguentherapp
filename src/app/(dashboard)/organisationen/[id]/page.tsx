@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/hooks/use-toast'
 import { KontaktListe } from '@/components/organisationen/KontaktListe'
+import { NotizenTimeline } from '@/components/notizen/NotizenTimeline'
 
 export default function OrganisationDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -180,15 +181,13 @@ export default function OrganisationDetailPage({ params }: { params: { id: strin
         </CardContent>
       </Card>
 
-      {/* Notizen – folgt */}
+      {/* Notizen */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Notizen</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Notizen werden im nächsten Schritt implementiert.
-          </p>
+          <NotizenTimeline organizationId={org.id} />
         </CardContent>
       </Card>
 
