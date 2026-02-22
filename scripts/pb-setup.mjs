@@ -1,6 +1,6 @@
 /**
  * PocketBase Setup Script
- * Erstellt alle Collections (organizations, contacts, notes, users)
+ * Erstellt alle Collections (organizations, contacts, notes)
  *
  * Usage:
  *   node scripts/pb-setup.mjs <email> <password>
@@ -74,10 +74,8 @@ async function main() {
           name: 'status',
           type: 'select',
           required: true,
-          options: {
-            maxSelect: 1,
-            values: ['lead', 'contacted', 'responded', 'interested', 'offer_sent', 'customer', 'no_interest', 'paused'],
-          },
+          maxSelect: 1,
+          values: ['lead', 'contacted', 'responded', 'interested', 'offer_sent', 'customer', 'no_interest', 'paused'],
         },
         { name: 'tags', type: 'text' },
       ],
@@ -95,7 +93,7 @@ async function main() {
       type: 'base',
       ...rules,
       fields: [
-        { name: 'organization', type: 'relation', required: true, options: { collectionId: org.id, cascadeDelete: true, minSelect: null, maxSelect: 1 } },
+        { name: 'organization', type: 'relation', required: true, collectionId: org.id, cascadeDelete: true, maxSelect: 1 },
         { name: 'first_name', type: 'text', required: true },
         { name: 'last_name', type: 'text', required: true },
         { name: 'role', type: 'text' },
@@ -118,17 +116,18 @@ async function main() {
       type: 'base',
       ...rules,
       fields: [
-        { name: 'organization', type: 'relation', options: { collectionId: org.id, cascadeDelete: false, minSelect: null, maxSelect: 1 } },
-        { name: 'contact', type: 'relation', options: { collectionId: contact.id, cascadeDelete: false, minSelect: null, maxSelect: 1 } },
+        { name: 'organization', type: 'relation', collectionId: org.id, cascadeDelete: false, maxSelect: 1 },
+        { name: 'contact', type: 'relation', collectionId: contact.id, cascadeDelete: false, maxSelect: 1 },
         {
           name: 'type',
           type: 'select',
           required: true,
-          options: { maxSelect: 1, values: ['internal', 'call', 'visit', 'email_in', 'email_out', 'other'] },
+          maxSelect: 1,
+          values: ['internal', 'call', 'visit', 'email_in', 'email_out', 'other'],
         },
         { name: 'content', type: 'editor', required: true },
         { name: 'noted_at', type: 'date', required: true },
-        { name: 'created_by', type: 'relation', required: true, options: { collectionId: users.id, cascadeDelete: false, minSelect: null, maxSelect: 1 } },
+        { name: 'created_by', type: 'relation', required: true, collectionId: users.id, cascadeDelete: false, maxSelect: 1 },
       ],
     }),
   });
