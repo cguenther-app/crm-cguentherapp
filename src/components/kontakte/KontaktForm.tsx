@@ -11,11 +11,11 @@ import { Contact } from '@/types'
 const schema = z.object({
   first_name: z.string().min(1, 'Vorname ist erforderlich'),
   last_name: z.string().min(1, 'Nachname ist erforderlich'),
-  role: z.string().default(''),
-  email: z.union([z.string().email('Ungültige E-Mail'), z.literal('')]).default(''),
-  phone: z.string().default(''),
-  mobile: z.string().default(''),
-  is_primary: z.boolean().default(false),
+  role: z.string(),
+  email: z.union([z.string().email('Ungültige E-Mail'), z.literal('')]),
+  phone: z.string(),
+  mobile: z.string(),
+  is_primary: z.boolean(),
 })
 
 export type KontaktFormData = z.infer<typeof schema>
