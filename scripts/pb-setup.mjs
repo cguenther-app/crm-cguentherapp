@@ -48,13 +48,9 @@ async function main() {
     deleteRule: AUTH_RULE,
   };
 
-  // --- users (Auth-Collection) ---
-  console.log('Creating users collection...');
-  const users = await request('/api/collections', {
-    method: 'POST',
-    headers: h,
-    body: JSON.stringify({ name: 'users', type: 'auth', ...rules }),
-  });
+  // --- users (existiert bereits als PocketBase Default) ---
+  console.log('Fetching users collection...');
+  const users = await request('/api/collections/users', { headers: h });
   console.log(`  users (${users.id})`);
 
   // --- organizations ---
