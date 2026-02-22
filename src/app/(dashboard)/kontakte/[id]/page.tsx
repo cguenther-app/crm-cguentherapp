@@ -65,7 +65,7 @@ export default function KontaktDetailPage({ params }: { params: { id: string } }
               {kontakt.first_name} {kontakt.last_name}
             </h1>
             {kontakt.is_primary && (
-              <Star className="h-5 w-5 text-accent fill-accent" title="Hauptkontakt" />
+              <Star className="h-5 w-5 text-accent fill-accent" />
             )}
           </div>
           {kontakt.role && (
