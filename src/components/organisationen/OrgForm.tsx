@@ -17,14 +17,14 @@ import { LEAD_STATUS, LEAD_STATUS_LABELS, Organization } from '@/types'
 
 const schema = z.object({
   name: z.string().min(1, 'Name ist erforderlich'),
-  industry: z.string().default(''),
-  address_street: z.string().default(''),
-  address_zip: z.string().default(''),
-  address_city: z.string().default(''),
-  website: z.string().default(''),
-  phone: z.string().default(''),
+  industry: z.string(),
+  address_street: z.string(),
+  address_zip: z.string(),
+  address_city: z.string(),
+  website: z.string(),
+  phone: z.string(),
   status: z.enum(['lead', 'contacted', 'responded', 'interested', 'offer_sent', 'customer', 'no_interest', 'paused']),
-  tags: z.string().default(''),
+  tags: z.string(),
 })
 
 export type OrgFormData = z.infer<typeof schema>
