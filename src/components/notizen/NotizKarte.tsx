@@ -9,6 +9,14 @@ import { NotizEditor } from './NotizEditor'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -49,6 +57,7 @@ export function NotizKarte({ note, onDelete, onUpdate }: Props) {
   const [editContent, setEditContent] = useState(note.content)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   async function handleSave() {
     if (!editContent || editContent === '<p></p>') return
@@ -75,6 +84,7 @@ export function NotizKarte({ note, onDelete, onUpdate }: Props) {
   }
 
   return (
+    <>
     <div className="border rounded-md p-4 bg-card">
       {isEditing ? (
         <div className="space-y-3">
@@ -135,8 +145,7 @@ export function NotizKarte({ note, onDelete, onUpdate }: Props) {
                 <Edit className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={handleDelete}
-                disabled={isDeleting}
+                onClick={() => setShowDeleteDialog(true)}
                 className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
               >
                 <Trash2 className="h-3.5 w-3.5" />
@@ -150,5 +159,25 @@ export function NotizKarte({ note, onDelete, onUpdate }: Props) {
         </>
       )}
     </div>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Notiz löschen?</DialogTitle>
+            <DialogDescription>
+              Diese Notiz wird dauerhaft gelöscht und kann nicht wiederhergestellt werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+              {isDeleting ? 'Löschen...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
