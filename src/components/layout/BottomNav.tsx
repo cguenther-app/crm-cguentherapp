@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Building2, Users } from 'lucide-react'
+import { BarChart3, Building2, Users, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/leads', label: 'Leads', icon: BarChart3 },
   { href: '/organisationen', label: 'Firmen', icon: Building2 },
   { href: '/kontakte', label: 'Kontakte', icon: Users },
+  { href: '/produkte', label: 'Produkte', icon: Package },
 ]
 
 export function BottomNav() {

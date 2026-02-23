@@ -7,6 +7,7 @@ import {
   BarChart3,
   Building2,
   Users,
+  Package,
   LogOut,
 } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
@@ -19,6 +20,7 @@ const navItems = [
   { href: '/leads', label: 'Leads', icon: BarChart3 },
   { href: '/organisationen', label: 'Organisationen', icon: Building2 },
   { href: '/kontakte', label: 'Kontakte', icon: Users },
+  { href: '/produkte', label: 'Produkte', icon: Package },
 ]
 
 export function Sidebar() {

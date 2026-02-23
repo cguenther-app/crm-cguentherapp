@@ -133,6 +133,78 @@ async function main() {
   });
   console.log(`  notes (${notes.id})`);
 
+  // --- products ---
+  console.log('Creating products collection...');
+  const products = await request('/api/collections', {
+    method: 'POST',
+    headers: h,
+    body: JSON.stringify({
+      name: 'products',
+      type: 'base',
+      ...rules,
+      fields: [
+        { name: 'article_number', type: 'text', required: true },
+        { name: 'name', type: 'text', required: true },
+        { name: 'description', type: 'text' },
+        { name: 'category', type: 'text' },
+        {
+          name: 'billing_type',
+          type: 'select',
+          required: true,
+          maxSelect: 1,
+          values: ['one_time', 'by_effort'],
+        },
+        { name: 'price', type: 'number' },
+        { name: 'note', type: 'text' },
+        { name: 'active', type: 'bool' },
+      ],
+    }),
+  });
+  console.log(`  products (${products.id})`);
+
+  // --- seed products ---
+  console.log('Seeding products...');
+  const seedData = [
+    {
+      article_number: 'P2a',
+      name: 'Online-Stellen (neuer Server)',
+      description: 'Ich richte alles neu ein und stelle es online',
+      category: 'Online stellen',
+      billing_type: 'one_time',
+      price: 0,
+      note: 'Am unkompliziertesten',
+      active: true,
+    },
+    {
+      article_number: 'P2b',
+      name: 'Online-Stellen (bestehender Server)',
+      description: 'Einbau in bestehende Systeme',
+      category: 'Online stellen',
+      billing_type: 'by_effort',
+      price: 0,
+      note: 'Mehr Abstimmung nötig',
+      active: true,
+    },
+    {
+      article_number: 'P2c',
+      name: 'Server-Check vorab',
+      description: 'Ich schaue mir an, was schon da ist',
+      category: 'Online stellen',
+      billing_type: 'by_effort',
+      price: 0,
+      note: 'Oft sinnvoll vor P2b',
+      active: true,
+    },
+  ];
+  for (const item of seedData) {
+    const p = await request('/api/collections/products/records', {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify(item),
+    });
+    console.log(`  ${item.article_number} – ${item.name} (${p.id})`);
+  }
+
   console.log('\nAlle Collections erfolgreich angelegt!');
 }
 

@@ -74,6 +74,27 @@ export interface Contact {
   }
 }
 
+export const BILLING_TYPES = ['one_time', 'by_effort'] as const
+export type BillingType = (typeof BILLING_TYPES)[number]
+export const BILLING_TYPE_LABELS: Record<BillingType, string> = {
+  one_time: 'Einmalig',
+  by_effort: 'Nach Aufwand',
+}
+
+export interface Product {
+  id: string
+  article_number: string
+  name: string
+  description: string
+  category: string
+  billing_type: BillingType
+  price: number
+  note: string
+  active: boolean
+  created: string
+  updated: string
+}
+
 export interface Note {
   id: string
   organization: string
