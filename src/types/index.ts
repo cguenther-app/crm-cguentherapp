@@ -110,3 +110,50 @@ export interface Note {
     contact?: Contact
   }
 }
+
+export const OFFER_STATUS = [
+  'draft',
+  'sent',
+  'accepted',
+  'rejected',
+  'expired',
+] as const
+
+export type OfferStatus = (typeof OFFER_STATUS)[number]
+
+export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {
+  draft: 'Entwurf',
+  sent: 'Gesendet',
+  accepted: 'Angenommen',
+  rejected: 'Abgelehnt',
+  expired: 'Abgelaufen',
+}
+
+export interface OfferPosition {
+  title: string
+  qty: number
+  unit: string
+  unit_price: number
+  total: number
+}
+
+export interface Offer {
+  id: string
+  organization: string
+  contact: string
+  title: string
+  number: string
+  status: OfferStatus
+  date: string
+  valid_until: string
+  positions: OfferPosition[]
+  total: number
+  notes: string
+  footer_note: string
+  created: string
+  updated: string
+  expand?: {
+    organization?: Organization
+    contact?: Contact
+  }
+}

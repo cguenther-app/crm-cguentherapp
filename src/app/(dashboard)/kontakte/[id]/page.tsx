@@ -152,7 +152,7 @@ export default function KontaktDetailPage({ params }: { params: { id: string } }
           <DialogHeader>
             <DialogTitle>Kontakt löschen?</DialogTitle>
             <DialogDescription>
-              „{kontakt.first_name} {kontakt.last_name}" wird dauerhaft gelöscht.
+              &bdquo;{kontakt.first_name} {kontakt.last_name}&ldquo; wird dauerhaft gelöscht.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

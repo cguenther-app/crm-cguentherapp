@@ -197,7 +197,7 @@ export default function OrganisationDetailPage({ params }: { params: { id: strin
           <DialogHeader>
             <DialogTitle>Organisation löschen?</DialogTitle>
             <DialogDescription>
-              „{org.name}" wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht
+              &bdquo;{org.name}&ldquo; wird dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht
               werden.
             </DialogDescription>
           </DialogHeader>

@@ -8,6 +8,7 @@ import {
   Building2,
   Users,
   Package,
+  FileText,
   LogOut,
 } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
@@ -21,6 +22,7 @@ const navItems = [
   { href: '/organisationen', label: 'Organisationen', icon: Building2 },
   { href: '/kontakte', label: 'Kontakte', icon: Users },
   { href: '/produkte', label: 'Produkte', icon: Package },
+  { href: '/angebote', label: 'Angebote', icon: FileText },
 ]
 
 export function Sidebar() {

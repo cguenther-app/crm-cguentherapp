@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Building2, Users, Package } from 'lucide-react'
+import { BarChart3, Building2, Users, Package, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/organisationen', label: 'Firmen', icon: Building2 },
   { href: '/kontakte', label: 'Kontakte', icon: Users },
   { href: '/produkte', label: 'Produkte', icon: Package },
+  { href: '/angebote', label: 'Angebote', icon: FileText },
 ]
 
 export function BottomNav() {
