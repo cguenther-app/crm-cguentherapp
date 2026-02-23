@@ -82,14 +82,16 @@ node scripts/pb-setup.mjs
 
 ## PocketBase Data Model
 
-Three collections: `organizations`, `contacts`, `notes`.
+Collections: `organizations`, `contacts`, `notes`, `products`, `offers`.
 
 - `organizations.status` enum: `lead | contacted | responded | interested | offer_sent | customer | no_interest | paused`
 - `contacts` always belong to an organization via `organization` relation field; `is_primary` bool marks the main contact
 - `notes` can attach to an organization (`organization` FK), a contact (`contact` FK), or both; `type` enum: `internal | call | visit | email_in | email_out | other`; `content` is HTML (TipTap); `noted_at` is user-editable
+- `products` — article catalog: `article_number`, `name`, `description`, `category`, `billing_type` (one_time/by_effort), `price`, `active`
+- `offers` — quotes attached to an org: `organization` (relation), `contact` (relation), `title`, `number` (A-YYYY-XXX), `status` (draft/sent/accepted/rejected/expired), `date`, `valid_until`, `positions` (JSON as text), `total`, `notes`, `footer_note`
 - All collections use rule `@request.auth.id != ""` (login required for all operations)
 
-**Collection setup:** `scripts/pb-setup.mjs` creates all collections via PocketBase REST API. PocketBase v0.23+ uses flat field options (no nested `options: {}` object).
+**Collection setup:** `scripts/pb-setup.mjs` creates base collections; `scripts/pb-setup-products.mjs` and `scripts/pb-setup-offers.mjs` for later additions. PocketBase v0.23+ uses flat field options (no nested `options: {}` object).
 
 ## Key Conventions
 
@@ -113,12 +115,31 @@ Three collections: `organizations`, `contacts`, `notes`.
 
 Dark mode: `class` strategy via `next-themes`. `StatusBadge` (`src/components/organisationen/StatusBadge.tsx`) maps each lead status to a colored Badge. Days-since-contact color scale: green ≤7d → yellow ≤14d → orange ≤30d → red >30d.
 
+## PocketBase Caveats
+
+- **`sort=-created` is broken** on this PocketBase version (returns 400). Use other fields for sorting (e.g. `-date`, `name`).
+- **`json` field type + auth rules** causes 400. Workaround: use `text` type and JSON.stringify/parse in app code. See `positions` field in `offers`.
+
 ## V2 Roadmap (next features to build)
 
-Planned order per PRD:
-1. **Produkte/Artikelkatalog** (`/produkte`) — article catalog as basis for quotes; waiting on final article list from user
-2. **Angebote** (`/angebote`) — create/send/track quotes, PDF export via `@react-pdf/renderer`, §19 UStG notice; depends on Produkte
-3. **Erinnerungen/Follow-ups** — reminder date per org/contact, shown in lead pipeline
-4. **Dashboard** — KPIs: open leads, quotes, recent activity
+**Done:**
+1. ~~**Produkte/Artikelkatalog** (`/produkte`)~~ — article catalog, CRUD pages
+2. ~~**Angebote** (`/angebote`)~~ — CRUD, PDF export (Word-Vorlage), Katalog-Picker, Status-Workflow, Org-Status-Link
+
+**Next up:**
+3. **KPI-Kacheln auf Listenseiten** — Kompakte Statistik-Kacheln über den Tabellen:
+   - `/angebote`: Anzahl angenommen / abgelehnt / ausstehend, Summen pro Status
+   - `/organisationen`: Anzahl pro Lead-Status
+   - `/kontakte`: Gesamtanzahl
+   - `/produkte`: Aktiv / Inaktiv
+4. **Rechnungen** (`/rechnungen`) — Aus angenommenen Angeboten Rechnungen erzeugen, PDF-Export, Zahlungsstatus (offen/bezahlt/überfällig), Mahnwesen-Basis
+5. **EÜR / Buchhaltung** (`/buchhaltung`) — Einnahmenüberschussrechnung für Kleingewerbe:
+   - Einnahmen aus Rechnungen (bezahlt), Ausgaben manuell erfassen
+   - Monats-/Jahresübersicht, Gewinnermittlung
+   - Export für Steuerberater / Elster (CSV/PDF)
+   - Anlage EÜR Zuordnung (Betriebseinnahmen §19 UStG)
+6. **Erinnerungen/Follow-ups** — Erinnerungsdatum pro Org/Kontakt, in Lead-Pipeline anzeigen
+7. **Dashboard** (`/`) — KPIs: offene Leads, Angebotssummen, Umsatz, letzte Aktivität
+8. **App-Info / Release Notes** — Versionshistorie + aktueller Release-Stand, z.B. über ein Info-Modal (Sidebar-Footer) oder `/info`-Page mit Changelog
 
 New feature workflow: add to PRD → define PocketBase collection → extend `scripts/pb-setup.mjs` → build hook → components → pages → test via SSH tunnel → deploy.
