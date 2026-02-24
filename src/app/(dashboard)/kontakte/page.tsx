@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, Star, Users } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useKontakte } from '@/hooks/useKontakte'
+import { KPICard } from '@/components/ui/KPICard'
 
 export default function KontaktePage() {
   const { kontakte, isLoading } = useKontakte()
@@ -28,6 +29,16 @@ export default function KontaktePage() {
       <div className="flex items-center gap-2 mb-6">
         <Users className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">Kontakte</h1>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-6">
+        <KPICard label="Kontakte gesamt" value={kontakte.length} isLoading={isLoading} />
+        <KPICard
+          label="Hauptkontakte"
+          value={kontakte.filter((k) => k.is_primary).length}
+          colorClass="text-accent"
+          isLoading={isLoading}
+        />
       </div>
 
       <div className="relative mb-4">

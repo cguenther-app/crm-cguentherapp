@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/select'
 import { useOrganisationen } from '@/hooks/useOrganisationen'
 import { StatusBadge } from '@/components/organisationen/StatusBadge'
+import { KPICard } from '@/components/ui/KPICard'
 import { LEAD_STATUS, LEAD_STATUS_LABELS } from '@/types'
 
 export default function OrganisationenPage() {
@@ -22,6 +23,11 @@ export default function OrganisationenPage() {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+
+  const countLeads = orgs.filter((o) => o.status === 'lead').length
+  const countInterested = orgs.filter((o) => o.status === 'interested' || o.status === 'responded').length
+  const countOfferSent = orgs.filter((o) => o.status === 'offer_sent').length
+  const countCustomers = orgs.filter((o) => o.status === 'customer').length
 
   const filtered = orgs.filter((org) => {
     const q = search.toLowerCase()
@@ -47,6 +53,13 @@ export default function OrganisationenPage() {
             Neue Organisation
           </Button>
         </Link>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <KPICard label="Leads" value={countLeads} isLoading={isLoading} />
+        <KPICard label="Interessiert" value={countInterested} colorClass="text-yellow-600" isLoading={isLoading} />
+        <KPICard label="Angebote offen" value={countOfferSent} colorClass="text-blue-600" isLoading={isLoading} />
+        <KPICard label="Kunden" value={countCustomers} colorClass="text-green-600" isLoading={isLoading} />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">

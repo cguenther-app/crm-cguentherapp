@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { useProdukte } from '@/hooks/useProdukte'
+import { KPICard } from '@/components/ui/KPICard'
 import { BILLING_TYPE_LABELS } from '@/types'
 
 export default function ProduktePage() {
@@ -38,6 +39,12 @@ export default function ProduktePage() {
             Neues Produkt
           </Button>
         </Link>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <KPICard label="Gesamt" value={produkte.length} isLoading={isLoading} />
+        <KPICard label="Aktiv" value={produkte.filter((p) => p.active).length} colorClass="text-green-600" isLoading={isLoading} />
+        <KPICard label="Inaktiv" value={produkte.filter((p) => !p.active).length} colorClass="text-muted-foreground" isLoading={isLoading} />
       </div>
 
       <div className="relative mb-4">

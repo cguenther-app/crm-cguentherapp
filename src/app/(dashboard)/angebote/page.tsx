@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAngebote } from '@/hooks/useAngebote'
 import { AngebotStatusBadge } from '@/components/angebote/AngebotStatusBadge'
+import { KPICard } from '@/components/ui/KPICard'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 
@@ -15,6 +16,12 @@ export default function AngebotePage() {
   const { angebote, isLoading, error } = useAngebote()
   const router = useRouter()
   const [search, setSearch] = useState('')
+
+  const accepted = angebote.filter((a) => a.status === 'accepted')
+  const acceptedSum = accepted.reduce((sum, a) => sum + (a.total ?? 0), 0)
+  const pending = angebote.filter((a) => a.status === 'draft' || a.status === 'sent')
+  const declined = angebote.filter((a) => a.status === 'rejected' || a.status === 'expired')
+  const totalSum = angebote.reduce((sum, a) => sum + (a.total ?? 0), 0)
 
   const filtered = angebote.filter((a) => {
     const q = search.toLowerCase()
@@ -40,6 +47,33 @@ export default function AngebotePage() {
             Neues Angebot
           </Button>
         </Link>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <KPICard
+          label="Angenommen"
+          value={accepted.length}
+          sub={acceptedSum > 0 ? `${acceptedSum.toFixed(2)} €` : undefined}
+          colorClass="text-green-600"
+          isLoading={isLoading}
+        />
+        <KPICard
+          label="Ausstehend"
+          value={pending.length}
+          colorClass="text-yellow-600"
+          isLoading={isLoading}
+        />
+        <KPICard
+          label="Abgelehnt / Abgelaufen"
+          value={declined.length}
+          colorClass="text-destructive"
+          isLoading={isLoading}
+        />
+        <KPICard
+          label="Gesamtvolumen"
+          value={totalSum > 0 ? `${totalSum.toFixed(2)} €` : '–'}
+          isLoading={isLoading}
+        />
       </div>
 
       <div className="relative mb-4">
