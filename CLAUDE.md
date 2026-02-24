@@ -28,32 +28,79 @@ npm run dev
 npx shadcn@latest add <component>
 ```
 
+## Environments
+
+| | **Production** | **Staging** |
+|---|---|---|
+| Webapp | https://crm.cguenther.app | http://46.225.2.55:3101 |
+| PocketBase API | `https://crm.cguenther.app/pb` (via NGINX) | `http://46.225.2.55:8091` (public) |
+| PocketBase Admin | http://localhost:8090/_/ (SSH tunnel) | http://46.225.2.55:8091/_/ (public) |
+| Branch | `main` | `develop` |
+| Server-Verzeichnis | `/opt/crm-cguentherapp` | `/opt/crm-cguentherapp-staging` |
+| Docker Compose | `docker-compose.yml` | `docker-compose.staging.yml` |
+| Host-Port Frontend | 3100 | 3101 |
+| Host-Port PocketBase | 127.0.0.1:8090 (lokal) | 0.0.0.0:8091 (öffentlich) |
+| pb_data | `./pocketbase/pb_data` | `./pocketbase/pb_data_staging` |
+
 ## Deployment
 
-Server: Hetzner VPS at `46.225.2.55`, repo at `/opt/crm-cguentherapp`.
+**Automatisch via GitHub Actions** (`.github/workflows/deploy.yml`):
+- Push auf `main` → Production-Deploy
+- Push auf `develop` → Staging-Deploy
 
+Deploy-Befehl nutzt `--no-deps` damit PocketBase-Container **nie** durch Frontend-Deploys neu erstellt wird.
+
+Server: Hetzner VPS at `46.225.2.55`.
+
+**Manueller Deploy (falls nötig):**
 ```bash
-# On local machine – push changes
-git push
+# Production
+ssh root@46.225.2.55
+cd /opt/crm-cguentherapp && git pull origin main
+docker compose up -d --build --no-deps crm-frontend
 
-# On server – pull and rebuild frontend
-git pull
-docker compose up -d --build crm-frontend
+# Staging
+cd /opt/crm-cguentherapp-staging && git pull origin develop
+docker compose -f docker-compose.staging.yml up -d --build --no-deps crm-frontend-staging
 ```
 
-Frontend runs at https://crm.cguenther.app. PocketBase is internal-only (no public port).
-
-**First-time PocketBase collection setup:**
+**PocketBase Collection-Setup (einmalig pro Umgebung):**
 ```bash
-node scripts/pb-setup.mjs
+# Production (SSH-Tunnel auf 8090 erforderlich)
+node scripts/pb-setup.mjs <email> <pw>
+node scripts/pb-setup-offers.mjs <email> <pw>
+node scripts/pb-setup-invoices.mjs <email> <pw>
+node scripts/pb-setup-accounting.mjs <email> <pw>
+
+# Staging (direkt, kein Tunnel nötig)
+$env:POCKETBASE_URL="http://46.225.2.55:8091"; node scripts/pb-setup.mjs <email> <pw>
+$env:POCKETBASE_URL="http://46.225.2.55:8091"; node scripts/pb-setup-offers.mjs <email> <pw>
+$env:POCKETBASE_URL="http://46.225.2.55:8091"; node scripts/pb-setup-invoices.mjs <email> <pw>
+$env:POCKETBASE_URL="http://46.225.2.55:8091"; node scripts/pb-setup-accounting.mjs <email> <pw>
+```
+
+**PocketBase Superuser setzen:**
+```bash
+docker exec <container> /usr/local/bin/pocketbase superuser upsert <email> '<pw>' --dir /pb_data
+```
+
+**Git-Workflow:**
+```
+feature/xyz → PR auf develop → Staging-Deploy (automatisch) → testen
+develop     → PR auf main    → Production-Deploy (automatisch)
 ```
 
 ## Architecture
 
-**Full stack:** Next.js 14 (App Router) frontend + PocketBase backend, both Docker containers on Hetzner VPS. PocketBase runs in the internal Docker network (`crm-internal`) — not publicly exposed. NGINX Proxy Manager routes `crm.cguenther.app → crm-frontend:3000`.
+**Full stack:** Next.js 14 (App Router) frontend + PocketBase backend, both Docker containers on Hetzner VPS. PocketBase volume mount: `--dir=/pb_data` (wichtig: nicht `/pb/pb_data`).
+
+**Production:** PocketBase im internen Docker-Netzwerk (`crm-internal`), nicht öffentlich. NGINX Proxy Manager routet `crm.cguenther.app → crm-frontend:3000` und `crm.cguenther.app/pb → crm-pocketbase:8090`.
+
+**Staging:** PocketBase öffentlich erreichbar auf Port 8091 (kein NGINX, kein SSL). Frontend öffentlich auf Port 3101.
 
 **PocketBase access:**
-- Production: via internal Docker hostname `crm-pocketbase:8090` (`POCKETBASE_URL`)
+- Production: via NGINX `/pb`-Proxy oder SSH tunnel `localhost:8090`
+- Staging: direkt `http://46.225.2.55:8091`
 - Local dev: via SSH tunnel on `localhost:8090` (`NEXT_PUBLIC_POCKETBASE_URL`)
 - All API calls are client-side (hooks) — no Next.js server components/actions for data fetching
 
@@ -67,6 +114,16 @@ node scripts/pb-setup.mjs
 - `/kontakte/[id]` → contact detail + notes timeline
 - `/kontakte/[id]/bearbeiten` → edit form
 - `/leads` → pipeline table: all orgs with last-contact date and color-coded days column
+- `/angebote` → list with KPIs, search
+- `/angebote/neu` → create form with Katalog-Picker
+- `/angebote/[id]` → detail with PDF export, status workflow
+- `/rechnungen` → list with KPIs (offen/überfällig/bezahlt)
+- `/rechnungen/neu` → create form, optional `?from=<angebotId>`
+- `/rechnungen/[id]` → detail with PDF, "Als Einnahme buchen" bei Status bezahlt
+- `/produkte` → article catalog list
+- `/buchhaltung` → EÜR mit Preset-Chips + Custom-Datumsrange, KPIs, CSV/PDF-Export
+- `/buchhaltung/neu` → create entry, optional `?invoice=<id>` für Vorausfüllung
+- `/buchhaltung/[id]` → detail with Belegdownload
 - `/login` → outside dashboard layout (no sidebar)
 
 **Component layers:**
@@ -75,23 +132,29 @@ node scripts/pb-setup.mjs
 - `src/components/organisationen/` — OrgForm, StatusBadge, KontaktListe
 - `src/components/kontakte/` — KontaktForm
 - `src/components/notizen/` — NotizEditor (TipTap), NotizKarte, NotizenTimeline
+- `src/components/angebote/` — AngebotPDF, logo-base64
+- `src/components/rechnungen/` — RechnungForm, RechnungPDF, RechnungStatusBadge
+- `src/components/buchhaltung/` — EntryForm, EuerPDF
 - `src/lib/pocketbase.ts` — singleton PocketBase JS SDK client
 - `src/lib/auth.ts` — login, logout, session check
-- `src/hooks/` — `useOrganisationen`, `useKontakte`, `useNotizen`, `useAuth`
-- `src/types/index.ts` — all TypeScript entity types + `LEAD_STATUS` array + `LEAD_STATUS_LABELS` map
+- `src/lib/exportCsv.ts` — CSV-Export für Buchhaltung
+- `src/hooks/` — `useOrganisationen`, `useKontakte`, `useNotizen`, `useAuth`, `useAngebote`, `useRechnungen`, `useBuchhaltung`
+- `src/types/index.ts` — all TypeScript entity types + status/type arrays + label maps
 
 ## PocketBase Data Model
 
-Collections: `organizations`, `contacts`, `notes`, `products`, `offers`.
+Collections: `organizations`, `contacts`, `notes`, `products`, `offers`, `invoices`, `accounting_entries`.
 
 - `organizations.status` enum: `lead | contacted | responded | interested | offer_sent | customer | no_interest | paused`
 - `contacts` always belong to an organization via `organization` relation field; `is_primary` bool marks the main contact
 - `notes` can attach to an organization (`organization` FK), a contact (`contact` FK), or both; `type` enum: `internal | call | visit | email_in | email_out | other`; `content` is HTML (TipTap); `noted_at` is user-editable
 - `products` — article catalog: `article_number`, `name`, `description`, `category`, `billing_type` (one_time/by_effort), `price`, `active`
 - `offers` — quotes attached to an org: `organization` (relation), `contact` (relation), `title`, `number` (A-YYYY-XXX), `status` (draft/sent/accepted/rejected/expired), `date`, `valid_until`, `positions` (JSON as text), `total`, `notes`, `footer_note`
+- `invoices` — `offer` (relation), `organization`, `contact`, `title`, `number` (R-YYYY-XXX), `status` (open/paid/cancelled), `date`, `due_date`, `positions` (JSON as text), `total`, `notes`, `footer_note`
+- `accounting_entries` — `type` (income/expense), `date`, `amount`, `category`, `description`, `reference_number`, `invoice` (relation), `receipt` (file), `notes`
 - All collections use rule `@request.auth.id != ""` (login required for all operations)
 
-**Collection setup:** `scripts/pb-setup.mjs` creates base collections; `scripts/pb-setup-products.mjs` and `scripts/pb-setup-offers.mjs` for later additions. PocketBase v0.23+ uses flat field options (no nested `options: {}` object).
+**Collection setup:** `scripts/pb-setup.mjs` creates base collections (organizations, contacts, notes, products + seed data). Separate scripts for offers, invoices, accounting_entries. All scripts are idempotent (delete-then-create). PocketBase v0.23+ uses flat field options (no nested `options: {}` object).
 
 ## Key Conventions
 
@@ -102,6 +165,8 @@ Collections: `organizations`, `contacts`, `notes`, `products`, `offers`.
 - Date formatting: date-fns with German locale (`de`)
 - All UI text is in **German**
 - `next.config.js` sets `output: 'standalone'` for Docker builds
+- PDF export: `dynamic import` with `ssr: false`; logo in `src/components/angebote/logo-base64.ts`
+- Invoice numbers: R-YYYY-XXX (starts 001/year); Offer numbers: A-YYYY-XXX (starts 042)
 
 ## Design Tokens
 
@@ -119,27 +184,22 @@ Dark mode: `class` strategy via `next-themes`. `StatusBadge` (`src/components/or
 
 - **`sort=-created` is broken** on this PocketBase version (returns 400). Use other fields for sorting (e.g. `-date`, `name`).
 - **`json` field type + auth rules** causes 400. Workaround: use `text` type and JSON.stringify/parse in app code. See `positions` field in `offers`.
+- **Volume mount must be `/pb_data`** — the muchobien Docker image runs with `--dir=/pb_data`. Mount to `/pb/pb_data` causes data loss.
+- **Never recreate PocketBase container during deploys** — use `docker compose up --no-deps` to only rebuild the frontend.
+- **Superuser CLI needs `--dir /pb_data`** — e.g. `pocketbase superuser upsert ... --dir /pb_data`
 
 ## V2 Roadmap (next features to build)
 
 **Done:**
 1. ~~**Produkte/Artikelkatalog** (`/produkte`)~~ — article catalog, CRUD pages
-2. ~~**Angebote** (`/angebote`)~~ — CRUD, PDF export (Word-Vorlage), Katalog-Picker, Status-Workflow, Org-Status-Link
+2. ~~**Angebote** (`/angebote`)~~ — CRUD, PDF export, Katalog-Picker, Status-Workflow, Org-Status-Link
+3. ~~**KPI-Kacheln auf Listenseiten**~~ — Kompakte Statistik-Kacheln auf allen Listenseiten
+4. ~~**Rechnungen** (`/rechnungen`)~~ — CRUD, PDF-Export, Überfällig-Anzeige, "aus Angebot" Flow
+5. ~~**EÜR / Buchhaltung** (`/buchhaltung`)~~ — Einnahmen/Ausgaben, Belegupload, CSV/PDF-Export, §19 UStG
+6. ~~**App-Info / Release Notes**~~ — Info-Modal im Sidebar-Footer mit Versionshistorie
 
 **Next up:**
-3. **KPI-Kacheln auf Listenseiten** — Kompakte Statistik-Kacheln über den Tabellen:
-   - `/angebote`: Anzahl angenommen / abgelehnt / ausstehend, Summen pro Status
-   - `/organisationen`: Anzahl pro Lead-Status
-   - `/kontakte`: Gesamtanzahl
-   - `/produkte`: Aktiv / Inaktiv
-4. **Rechnungen** (`/rechnungen`) — Aus angenommenen Angeboten Rechnungen erzeugen, PDF-Export, Zahlungsstatus (offen/bezahlt/überfällig), Mahnwesen-Basis
-5. **EÜR / Buchhaltung** (`/buchhaltung`) — Einnahmenüberschussrechnung für Kleingewerbe:
-   - Einnahmen aus Rechnungen (bezahlt), Ausgaben manuell erfassen
-   - Monats-/Jahresübersicht, Gewinnermittlung
-   - Export für Steuerberater / Elster (CSV/PDF)
-   - Anlage EÜR Zuordnung (Betriebseinnahmen §19 UStG)
-6. **Erinnerungen/Follow-ups** — Erinnerungsdatum pro Org/Kontakt, in Lead-Pipeline anzeigen
-7. **Dashboard** (`/`) — KPIs: offene Leads, Angebotssummen, Umsatz, letzte Aktivität
-8. **App-Info / Release Notes** — Versionshistorie + aktueller Release-Stand, z.B. über ein Info-Modal (Sidebar-Footer) oder `/info`-Page mit Changelog
+7. **Erinnerungen/Follow-ups** — Erinnerungsdatum pro Org/Kontakt, in Lead-Pipeline anzeigen
+8. **Dashboard** (`/`) — KPIs: offene Leads, Angebotssummen, Umsatz, letzte Aktivität
 
-New feature workflow: add to PRD → define PocketBase collection → extend `scripts/pb-setup.mjs` → build hook → components → pages → test via SSH tunnel → deploy.
+New feature workflow: add to PRD → define PocketBase collection → extend setup script → build hook → components → pages → test via SSH tunnel → deploy.
