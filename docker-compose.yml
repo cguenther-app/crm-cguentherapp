@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     environment:
       - POCKETBASE_URL=http://crm-pocketbase:8090
-      - NEXT_PUBLIC_POCKETBASE_URL=http://crm-pocketbase:8090
+      - NEXT_PUBLIC_POCKETBASE_URL=https://crm.cguenther.app/pb
     ports:
       - "3100:3000"
     depends_on:
