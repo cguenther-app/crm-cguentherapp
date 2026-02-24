@@ -10,6 +10,7 @@ import {
   Package,
   FileText,
   Receipt,
+  BookOpen,
   LogOut,
 } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
@@ -26,6 +27,7 @@ const navItems = [
   { href: '/produkte', label: 'Produkte', icon: Package },
   { href: '/angebote', label: 'Angebote', icon: FileText },
   { href: '/rechnungen', label: 'Rechnungen', icon: Receipt },
+  { href: '/buchhaltung', label: 'Buchhaltung', icon: BookOpen },
 ]
 
 export function Sidebar() {

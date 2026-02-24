@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, Receipt, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Receipt, Pencil, Trash2, BookOpen } from 'lucide-react'
 import pb from '@/lib/pocketbase'
 import { Invoice, INVOICE_STATUS, INVOICE_STATUS_LABELS } from '@/types'
 import { hydrateInvoice } from '@/hooks/useRechnungen'
@@ -89,6 +89,14 @@ export default function RechnungDetailPage({ params }: { params: { id: string } 
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
           <RechnungPDFButton rechnung={rechnung} />
+          {rechnung.status === 'paid' && (
+            <Link href={`/buchhaltung/neu?invoice=${params.id}`}>
+              <Button variant="outline" size="sm" className="text-green-700 border-green-500 hover:bg-green-50 dark:hover:bg-green-950">
+                <BookOpen className="h-4 w-4 mr-1" />
+                Als Einnahme buchen
+              </Button>
+            </Link>
+          )}
           <Link href={`/rechnungen/${params.id}/bearbeiten`}>
             <Button variant="outline" size="sm">
               <Pencil className="h-4 w-4 mr-1" />

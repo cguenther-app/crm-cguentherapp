@@ -158,6 +158,43 @@ export interface Offer {
   }
 }
 
+export const ENTRY_TYPES = ['income', 'expense'] as const
+export type EntryType = (typeof ENTRY_TYPES)[number]
+export const ENTRY_TYPE_LABELS: Record<EntryType, string> = {
+  income: 'Einnahme',
+  expense: 'Ausgabe',
+}
+
+export const EXPENSE_CATEGORIES = [
+  'Betriebseinnahmen',
+  'Bürobedarf',
+  'Software & Tools',
+  'Hardware',
+  'Telefon & Internet',
+  'Fahrtkosten',
+  'Weiterbildung',
+  'Marketing',
+  'Sonstiges',
+] as const
+
+export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]
+
+export interface AccountingEntry {
+  id: string
+  type: EntryType
+  date: string
+  amount: number
+  category: string
+  description: string
+  reference_number: string
+  invoice: string
+  receipt: string
+  notes: string
+  created: string
+  updated: string
+  expand?: { invoice?: Invoice }
+}
+
 export const INVOICE_STATUS = ['open', 'paid', 'cancelled'] as const
 
 export type InvoiceStatus = (typeof INVOICE_STATUS)[number]

@@ -12,6 +12,15 @@ import {
 
 const RELEASES = [
   {
+    version: '1.5.0',
+    date: '2026-02-24',
+    changes: [
+      'EÜR / Buchhaltung-Modul: Einnahmen & Ausgaben, Belegupload, Jahresfilter',
+      'CSV- und PDF-Export der Einnahmenüberschussrechnung (§19 UStG)',
+      'Rechnungen: "Als Einnahme buchen"-Button bei bezahlten Rechnungen',
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-02-24',
     changes: [
