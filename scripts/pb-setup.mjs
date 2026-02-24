@@ -1,6 +1,7 @@
 /**
  * PocketBase Setup Script
- * Erstellt alle Collections (organizations, contacts, notes)
+ * Erstellt alle Collections (organizations, contacts, notes, products)
+ * Idempotent: löscht existierende Collections vor dem Anlegen.
  *
  * Usage:
  *   node scripts/pb-setup.mjs <email> <password>
@@ -24,6 +25,18 @@ async function request(path, options = {}) {
     throw new Error(`${path} failed: ${JSON.stringify(data)}`);
   }
   return data;
+}
+
+async function deleteIfExists(name, h) {
+  const res = await fetch(`${PB_URL}/api/collections/${name}`, { method: 'DELETE', headers: h });
+  if (res.ok) {
+    console.log(`  deleted existing ${name} collection.`);
+  } else if (res.status === 404) {
+    console.log(`  no existing ${name} collection found.`);
+  } else {
+    const err = await res.json();
+    throw new Error(`DELETE ${name} failed: ${JSON.stringify(err)}`);
+  }
 }
 
 async function main() {
@@ -54,6 +67,8 @@ async function main() {
   console.log(`  users (${users.id})`);
 
   // --- organizations ---
+  console.log('Deleting organizations collection if it exists...');
+  await deleteIfExists('organizations', h);
   console.log('Creating organizations collection...');
   const org = await request('/api/collections', {
     method: 'POST',
@@ -84,6 +99,8 @@ async function main() {
   console.log(`  organizations (${org.id})`);
 
   // --- contacts ---
+  console.log('Deleting contacts collection if it exists...');
+  await deleteIfExists('contacts', h);
   console.log('Creating contacts collection...');
   const contact = await request('/api/collections', {
     method: 'POST',
@@ -107,6 +124,8 @@ async function main() {
   console.log(`  contacts (${contact.id})`);
 
   // --- notes ---
+  console.log('Deleting notes collection if it exists...');
+  await deleteIfExists('notes', h);
   console.log('Creating notes collection...');
   const notes = await request('/api/collections', {
     method: 'POST',
@@ -134,6 +153,8 @@ async function main() {
   console.log(`  notes (${notes.id})`);
 
   // --- products ---
+  console.log('Deleting products collection if it exists...');
+  await deleteIfExists('products', h);
   console.log('Creating products collection...');
   const products = await request('/api/collections', {
     method: 'POST',
