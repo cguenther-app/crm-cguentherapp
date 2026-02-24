@@ -12,6 +12,7 @@ import {
   LogOut,
 } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
+import { AppInfoModal } from './AppInfoModal'
 import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { Separator } from '@/components/ui/separator'
@@ -76,6 +77,7 @@ export function Sidebar() {
             {user?.email}
           </span>
           <div className="flex items-center gap-1">
+            <AppInfoModal />
             <ThemeToggle />
             <Button
               variant="ghost"
