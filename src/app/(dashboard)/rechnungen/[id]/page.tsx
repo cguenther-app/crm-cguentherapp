@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, FileText, Pencil, Trash2, Receipt } from 'lucide-react'
+import { ArrowLeft, Receipt, Pencil, Trash2 } from 'lucide-react'
 import pb from '@/lib/pocketbase'
-import { Offer, OFFER_STATUS, OFFER_STATUS_LABELS } from '@/types'
-import { hydrateOffer } from '@/hooks/useAngebote'
+import { Invoice, INVOICE_STATUS, INVOICE_STATUS_LABELS } from '@/types'
+import { hydrateInvoice } from '@/hooks/useRechnungen'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -17,28 +17,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { AngebotStatusBadge } from '@/components/angebote/AngebotStatusBadge'
+import { RechnungStatusBadge } from '@/components/rechnungen/RechnungStatusBadge'
 import { useToast } from '@/hooks/use-toast'
-import { ToastAction } from '@/components/ui/toast'
 import { format } from 'date-fns'
 import { de } from 'date-fns/locale'
 
-const AngebotPDFButton = dynamic(
-  () => import('@/components/angebote/AngebotPDF').then((m) => m.AngebotPDFButton),
+const RechnungPDFButton = dynamic(
+  () => import('@/components/rechnungen/RechnungPDF').then((m) => m.RechnungPDFButton),
   { ssr: false, loading: () => <Button variant="outline" size="sm" disabled>PDF...</Button> }
 )
 
-export default function AngebotDetailPage({ params }: { params: { id: string } }) {
+function isOverdue(rechnung: Invoice) {
+  return rechnung.status === 'open' && !!rechnung.due_date && new Date(rechnung.due_date) < new Date()
+}
+
+export default function RechnungDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { toast } = useToast()
-  const [angebot, setAngebot] = useState<Offer | null>(null)
+  const [rechnung, setRechnung] = useState<Invoice | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   async function load() {
-    const record = await pb.collection('offers').getOne<Offer>(params.id, {
-      expand: 'organization,contact',
+    const record = await pb.collection('invoices').getOne<Invoice>(params.id, {
+      expand: 'organization,contact,offer',
     })
-    setAngebot(hydrateOffer(record))
+    setRechnung(hydrateInvoice(record))
     setIsLoading(false)
   }
 
@@ -48,74 +51,45 @@ export default function AngebotDetailPage({ params }: { params: { id: string } }
   }, [params.id])
 
   async function handleDelete() {
-    if (!confirm('Angebot wirklich löschen?')) return
-    await pb.collection('offers').delete(params.id)
-    toast({ title: 'Angebot gelöscht' })
-    router.push('/angebote')
+    if (!confirm('Rechnung wirklich löschen?')) return
+    await pb.collection('invoices').delete(params.id)
+    toast({ title: 'Rechnung gelöscht' })
+    router.push('/rechnungen')
   }
 
   async function handleStatusChange(newStatus: string) {
-    await pb.collection('offers').update(params.id, { status: newStatus })
-    setAngebot((prev) => prev ? { ...prev, status: newStatus as Offer['status'] } : prev)
-    toast({ title: `Status: ${OFFER_STATUS_LABELS[newStatus as Offer['status']]}` })
-
-    // Prompt org status link when offer is sent
-    if (newStatus === 'sent' && angebot?.organization) {
-      const orgId = angebot.organization
-      toast({
-        title: 'Org-Status aktualisieren?',
-        description: 'Organisation auf "Angebot gesendet" setzen?',
-        action: (
-          <ToastAction
-            altText="Org-Status setzen"
-            onClick={async () => {
-              await pb.collection('organizations').update(orgId, {
-                status: 'offer_sent',
-              })
-              toast({ title: 'Org-Status aktualisiert' })
-            }}
-          >
-            Ja, setzen
-          </ToastAction>
-        ),
-      })
-    }
+    await pb.collection('invoices').update(params.id, { status: newStatus })
+    setRechnung((prev) => prev ? { ...prev, status: newStatus as Invoice['status'] } : prev)
+    toast({ title: `Status: ${INVOICE_STATUS_LABELS[newStatus as Invoice['status']]}` })
   }
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Laden...</p>
-  if (!angebot) return <p className="text-sm text-destructive">Angebot nicht gefunden.</p>
+  if (!rechnung) return <p className="text-sm text-destructive">Rechnung nicht gefunden.</p>
 
-  const positions = angebot.positions ?? []
+  const positions = rechnung.positions ?? []
+  const overdue = isOverdue(rechnung)
 
   return (
     <div>
       <Link
-        href="/angebote"
+        href="/rechnungen"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
-        Alle Angebote
+        Alle Rechnungen
       </Link>
 
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-2">
-          <FileText className="h-6 w-6 text-primary" />
+          <Receipt className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">{angebot.title}</h1>
-            <p className="text-sm text-muted-foreground font-mono">{angebot.number}</p>
+            <h1 className="text-2xl font-bold">{rechnung.title}</h1>
+            <p className="text-sm text-muted-foreground font-mono">{rechnung.number}</p>
           </div>
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
-          <AngebotPDFButton angebot={angebot} />
-          {angebot.status === 'accepted' && (
-            <Link href={`/rechnungen/neu?from=${params.id}`}>
-              <Button size="sm" className="bg-accent hover:bg-accent/90 text-white">
-                <Receipt className="h-4 w-4 mr-1" />
-                Rechnung erstellen
-              </Button>
-            </Link>
-          )}
-          <Link href={`/angebote/${params.id}/bearbeiten`}>
+          <RechnungPDFButton rechnung={rechnung} />
+          <Link href={`/rechnungen/${params.id}/bearbeiten`}>
             <Button variant="outline" size="sm">
               <Pencil className="h-4 w-4 mr-1" />
               Bearbeiten
@@ -140,41 +114,56 @@ export default function AngebotDetailPage({ params }: { params: { id: string } }
             <div>
               <p className="text-muted-foreground">Status</p>
               <div className="mt-1">
-                <AngebotStatusBadge status={angebot.status} />
+                <RechnungStatusBadge status={rechnung.status} isOverdue={overdue} />
               </div>
             </div>
             <div>
               <p className="text-muted-foreground">Organisation</p>
               <Link
-                href={`/organisationen/${angebot.organization}`}
+                href={`/organisationen/${rechnung.organization}`}
                 className="font-medium text-primary hover:underline"
               >
-                {angebot.expand?.organization?.name ?? '–'}
+                {rechnung.expand?.organization?.name ?? '–'}
               </Link>
             </div>
             <div>
               <p className="text-muted-foreground">Datum</p>
-              <p>{angebot.date ? format(new Date(angebot.date), 'dd.MM.yyyy', { locale: de }) : '–'}</p>
+              <p>{rechnung.date ? format(new Date(rechnung.date), 'dd.MM.yyyy', { locale: de }) : '–'}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Gültig bis</p>
-              <p>
-                {angebot.valid_until
-                  ? format(new Date(angebot.valid_until), 'dd.MM.yyyy', { locale: de })
+              <p className="text-muted-foreground">Fälligkeitsdatum</p>
+              <p className={overdue ? 'text-destructive font-medium' : ''}>
+                {rechnung.due_date
+                  ? format(new Date(rechnung.due_date), 'dd.MM.yyyy', { locale: de })
                   : '–'}
               </p>
             </div>
           </div>
 
-          {angebot.expand?.contact && (
+          {rechnung.expand?.contact && (
             <>
               <Separator />
               <div className="text-sm">
                 <p className="text-muted-foreground">Ansprechpartner</p>
                 <p>
-                  {angebot.expand.contact.first_name} {angebot.expand.contact.last_name}
-                  {angebot.expand.contact.role ? ` – ${angebot.expand.contact.role}` : ''}
+                  {rechnung.expand.contact.first_name} {rechnung.expand.contact.last_name}
+                  {rechnung.expand.contact.role ? ` – ${rechnung.expand.contact.role}` : ''}
                 </p>
+              </div>
+            </>
+          )}
+
+          {rechnung.expand?.offer && (
+            <>
+              <Separator />
+              <div className="text-sm">
+                <p className="text-muted-foreground">Quellangebot</p>
+                <Link
+                  href={`/angebote/${rechnung.offer}`}
+                  className="font-medium text-primary hover:underline font-mono"
+                >
+                  {rechnung.expand.offer.number} – {rechnung.expand.offer.title}
+                </Link>
               </div>
             </>
           )}
@@ -183,14 +172,14 @@ export default function AngebotDetailPage({ params }: { params: { id: string } }
         {/* Status change */}
         <div className="rounded-md border p-4">
           <p className="text-sm font-medium mb-3">Status ändern</p>
-          <Select value={angebot.status} onValueChange={handleStatusChange}>
+          <Select value={rechnung.status} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-48">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {OFFER_STATUS.map((s) => (
+              {INVOICE_STATUS.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {OFFER_STATUS_LABELS[s]}
+                  {INVOICE_STATUS_LABELS[s]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -230,27 +219,27 @@ export default function AngebotDetailPage({ params }: { params: { id: string } }
               </div>
               <div className="flex justify-end pt-2 border-t">
                 <span className="text-sm text-muted-foreground mr-4">Gesamtbetrag (netto):</span>
-                <span className="font-bold">{angebot.total?.toFixed(2) ?? '0.00'} €</span>
+                <span className="font-bold">{rechnung.total?.toFixed(2) ?? '0.00'} €</span>
               </div>
             </>
           )}
         </div>
 
         {/* Notes / Footer */}
-        {(angebot.notes || angebot.footer_note) && (
+        {(rechnung.notes || rechnung.footer_note) && (
           <div className="rounded-md border p-4 space-y-4 text-sm">
-            {angebot.notes && (
+            {rechnung.notes && (
               <div>
                 <p className="text-muted-foreground mb-1">Interne Notiz</p>
-                <p>{angebot.notes}</p>
+                <p>{rechnung.notes}</p>
               </div>
             )}
-            {angebot.footer_note && (
+            {rechnung.footer_note && (
               <>
-                {angebot.notes && <Separator />}
+                {rechnung.notes && <Separator />}
                 <div>
                   <p className="text-muted-foreground mb-1">Fußnotentext</p>
-                  <p className="text-muted-foreground italic">{angebot.footer_note}</p>
+                  <p className="text-muted-foreground italic">{rechnung.footer_note}</p>
                 </div>
               </>
             )}

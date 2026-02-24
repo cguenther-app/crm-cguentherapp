@@ -157,3 +157,36 @@ export interface Offer {
     contact?: Contact
   }
 }
+
+export const INVOICE_STATUS = ['open', 'paid', 'cancelled'] as const
+
+export type InvoiceStatus = (typeof INVOICE_STATUS)[number]
+
+export const INVOICE_STATUS_LABELS: Record<InvoiceStatus, string> = {
+  open: 'Offen',
+  paid: 'Bezahlt',
+  cancelled: 'Storniert',
+}
+
+export interface Invoice {
+  id: string
+  offer: string
+  organization: string
+  contact: string
+  title: string
+  number: string
+  status: InvoiceStatus
+  date: string
+  due_date: string
+  positions: OfferPosition[]
+  total: number
+  notes: string
+  footer_note: string
+  created: string
+  updated: string
+  expand?: {
+    organization?: Organization
+    contact?: Contact
+    offer?: Offer
+  }
+}
