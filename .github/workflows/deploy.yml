@@ -28,7 +28,7 @@ jobs:
             set -e
             cd /opt/crm-cguentherapp
             git pull origin main
-            docker compose up -d --build crm-frontend
+            docker compose up -d --build --no-deps crm-frontend
             docker image prune -f
           EOF
 
@@ -53,6 +53,6 @@ jobs:
             set -e
             cd /opt/crm-cguentherapp-staging
             git pull origin develop
-            docker compose -f docker-compose.staging.yml up -d --build crm-frontend-staging
+            docker compose -f docker-compose.staging.yml up -d --build --no-deps crm-frontend-staging
             docker image prune -f
           EOF
