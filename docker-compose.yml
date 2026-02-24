@@ -16,6 +16,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_POCKETBASE_URL=https://crm.cguenther.app/pb
     container_name: crm-frontend
     restart: unless-stopped
     environment:
