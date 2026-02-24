@@ -8,7 +8,7 @@ services:
     volumes:
       - ./pocketbase/pb_data_staging:/pb_data
     ports:
-      - "127.0.0.1:8091:8090"
+      - "0.0.0.0:8091:8090"
     networks:
       - crm-staging
 
@@ -17,14 +17,14 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_POCKETBASE_URL=https://staging.crm.cguenther.app/pb
+        - NEXT_PUBLIC_POCKETBASE_URL=http://46.225.2.55:8091
     container_name: crm-frontend-staging
     restart: unless-stopped
     environment:
       - POCKETBASE_URL=http://crm-pocketbase-staging:8090
-      - NEXT_PUBLIC_POCKETBASE_URL=https://staging.crm.cguenther.app/pb
+      - NEXT_PUBLIC_POCKETBASE_URL=http://46.225.2.55:8091
     ports:
-      - "3101:3000"
+      - "0.0.0.0:3101:3000"
     depends_on:
       - crm-pocketbase-staging
     networks:
