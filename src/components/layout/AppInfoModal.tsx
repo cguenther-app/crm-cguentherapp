@@ -12,6 +12,14 @@ import {
 
 const RELEASES = [
   {
+    version: '1.4.0',
+    date: '2026-02-24',
+    changes: [
+      'Rechnungen-Modul: CRUD, PDF-Export, Überfällig-Anzeige, "aus Angebot erstellen"-Flow',
+      'Angebot-Detailseite: "Rechnung erstellen"-Button bei Status Angenommen',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-02-24',
     changes: [
