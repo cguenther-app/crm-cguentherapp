@@ -6,7 +6,7 @@ services:
     container_name: crm-pocketbase-staging
     restart: unless-stopped
     volumes:
-      - ./pocketbase/pb_data_staging:/pb/pb_data
+      - ./pocketbase/pb_data_staging:/pb_data
     ports:
       - "127.0.0.1:8091:8090"
     networks:
